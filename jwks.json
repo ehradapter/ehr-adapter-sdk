@@ -2,9 +2,11 @@
   "keys": [
     {
       "kty": "RSA",
-      "n": "xLhHy3Y9IP327XlHj9R0OSfzJkpr-tpYlXz1NBMY11_6JJOzbayg-CIFoGy5ne1CJfnhlQEF1uQ41tVg7-ZlxhCM4qzh1RWXEwDhLv8dXG4IWlGQ9DsfHEq5VV8zt0R5yJ5he_axIECeruvA3PDTGKHJrOTUfEJ3AhfqniiIUHD_A4MwhwwU70WBOhnAVw2TH7s-C2SrzZ7VjfLxSlN-H5AXuMtPY8LX8AY3U-7vOaHam8PxDTGi_XJqkz101tij5CVnw-YH6BoRwPLtm18wzQ2ed9bILYqViO5N0OSul0r3y7wRbqm6prrmj7cY0LX2h95nRqxq-Ln3LIhPTVsNIQ",
+      "n": "rJjY5xc_u_QTavyqDfXI4EXC_5rXiiEwG366-Vgysx5hf8-aCe_Tu4NXWS0Lt7sOmV3cjhjPNU7kUnYFomtWsFp4onPxdrw41zPzN4ULKgtxg7K0sh-J1HEs92sE0U2JI14FzjCQr07og87TTRKnBU6KOyrohCtFdzSEbY1iCzoTy_bxV2IVU8lXvSO6T6rsRAtJ0wRUTgfOMlVyt89oCu14e5qm4kOOgsBhWV0fKqCB__BeYiZjgcv5TIMKXHd00OeBBv9kq7vS8Mr-fJWJOMu1Oi0tcGiyN_dZUaN-QpRytGDW1838JDPUX19Q8WdgJjoXJqqSOQi5WOrjbr3GUQ",
       "e": "AQAB",
-      "kid": "epic-key"
+      "kid": "epic-rsa-key",
+      "use": "sig",
+      "alg": "RS384"
     }
   ]
 }
