@@ -1,0 +1,12 @@
+{
+  "keys": [
+    {
+      "kty": "RSA",
+      "kid": "ehr-adapter-key",
+      "use": "sig",
+      "alg": "RS384",
+      "n": "wtpt5n415ETyLHNo-OyPR79-PTUZjfZGUKUQbkQ8ZzsuhKXt9tF7DnTq_fjqrmy_UAa6fHqHBaWhqMVEcZbmSNamCeV4qo1pPWUgD4vN962ZxwaotkkWWjUX1fxWBRrYYR0DPJrHEXM2P-CSRRDqBoQXDYZYOE_VvJJ0g80ZLY7hUwHWXJ8rrf21EHuMR70mD60ExzPfWVJBhLQCTalY9WA9AwS-F6FFBb2tbgIooHRbgvXU4_mS8vIXnx6O5hssSAr2hm2smQI59cfVC-dJJVZFlYb0E1DwGtUMP6vpzNFDgsI6-PcTJd8RLNuMXF3fNoOUhW6hg3Ogl2Kq_oU7_w",
+      "e": "AQAB"
+    }
+  ]
+}
