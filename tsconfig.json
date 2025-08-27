@@ -1,0 +1,55 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "lib": ["ES2020"],
+    "module": "ESNext",
+    "moduleResolution": "node",
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "allowJs": false,
+    "skipLibCheck": true,
+    "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "forceConsistentCasingInFileNames": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "outDir": "./lib",
+    "rootDir": ".",
+    "removeComments": false,
+    "importHelpers": true,
+    "isolatedModules": true,
+    "resolveJsonModule": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"],
+      "@/types/*": ["src/types/*"],
+      "@/core/*": ["src/core/*"],
+      "@/auth/*": ["src/auth/*"],
+      "@/vendors/*": ["src/vendors/*"],
+      "@/logging/*": ["src/logging/*"],
+      "@/utils/*": ["src/utils/*"],
+      "@/config/*": ["src/config/*"],
+      "@ehr-adapter-pro/plugins": ["packages/plugins/index.ts"],
+      "@ehr-adapter-pro/security": ["packages/security/index.ts"],
+      "@ehr-adapter-pro/graphql": ["packages/graphql/index.ts"]
+    }
+  },
+  "include": [
+    "src/**/*",
+    "packages/**/*",
+    "cli/**/*",
+    "scripts/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "lib",
+    "tests/**/*"
+  ]
+}

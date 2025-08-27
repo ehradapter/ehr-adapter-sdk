@@ -1,0 +1,100 @@
+{
+  "name": "@ehradapter/ehr-adapter-sdk",
+  "version": "1.0.0",
+  "description": "Open-source TypeScript SDK for EHR integrations with FHIR 4.0.1 compatibility. Mock adapter included for development and testing.",
+  "main": "./lib/cjs/index.js",
+  "module": "./lib/esm/index.mjs",
+  "types": "./lib/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./lib/index.mjs",
+      "require": "./lib/index.js",
+      "types": "./lib/index.d.ts"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib",
+    "README.md",
+    "LICENSE.md"
+  ],
+  "scripts": {
+    "build": "npm run clean && npm run build:esm && npm run build:cjs",
+    "build:esm": "tsc --module ESNext --outDir lib/esm",
+    "build:cjs": "tsc --module CommonJS --outDir lib/cjs",
+    "dev": "tsx watch src/index.ts",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "lint": "eslint . --ext .ts,.tsx --ignore-path .eslintignore",
+    "lint:fix": "eslint . --ext .ts,.tsx --fix --ignore-path .eslintignore",
+    "type-check": "tsc --noEmit",
+    "format": "prettier --write \"src/**/*.{ts,tsx,json,md}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx,json,md}\"",
+    "clean": "rimraf lib",
+    "prepublishOnly": "npm run clean && npm run build && npm run test",
+    "docs:generate": "typedoc src/index.ts --out docs/api"
+  },
+  "keywords": [
+    "ehr",
+    "fhir",
+    "healthcare",
+    "integration",
+    "typescript",
+    "sdk",
+    "mock",
+    "testing",
+    "development",
+    "open-source",
+    "mit"
+  ],
+  "author": "EHR Adapter Organization <hello@ehradapter.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ehradapter/ehr-adapter-sdk.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ehradapter/ehr-adapter-sdk/issues"
+  },
+  "homepage": "https://github.com/ehradapter/ehr-adapter-sdk#readme",
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "dependencies": {
+    "axios": "^1.6.0",
+    "uuid": "^9.0.1",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.14",
+    "@types/node": "^20.19.9",
+    "@types/uuid": "^9.0.7",
+    "@typescript-eslint/eslint-plugin": "^6.21.0",
+    "@typescript-eslint/parser": "^6.21.0",
+    "eslint": "^8.54.0",
+    "eslint-config-prettier": "^9.0.0",
+    "eslint-import-resolver-typescript": "^3.6.1",
+    "eslint-plugin-import": "^2.29.1",
+    "eslint-plugin-jest": "^27.6.0",
+    "eslint-plugin-prettier": "^5.0.1",
+    "jest": "^29.7.0",
+    "prettier": "^3.1.0",
+    "rimraf": "^5.0.5",
+    "ts-jest": "^29.1.1",
+    "tsx": "^4.6.0",
+    "typedoc": "^0.25.4",
+    "typescript": "^5.3.2"
+  ],
+  "peerDependencies": {
+    "typescript": ">=4.5.0"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "funding": {
+    "type": "commercial",
+    "url": "https://ehradapter.com/pricing"
+  }
+}
