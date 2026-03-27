@@ -13,19 +13,12 @@
 
 ## Quick Start
 
-> **Note:** The npm package `@ehradapter/ehr-adapter-sdk` is not yet published. Until it is, clone the repo and use it directly:
-
-```bash
-# Option 1 — npm install (once published)
-npm install @ehradapter/ehr-adapter-sdk
-
-# Option 2 — clone and link locally (available now)
-git clone https://github.com/ehradapter/ehr-adapter-sdk.git
-cd ehr-adapter-sdk && npm install && npm run build
+> ```bash
+npm install @securecloudnetworks/ehr-adapter-sdk
 ```
 
 ```typescript
-import { MockAdapter } from "@ehradapter/ehr-adapter-sdk";
+import { MockAdapter } from "@securecloudnetworks/ehr-adapter-sdk";
 
 const adapter = new MockAdapter({
   vendor: "mock",
@@ -275,7 +268,7 @@ The MIT version is the complete SDK minus vendor adapters. When you're ready to 
 
 ```bash
 # Free MIT version (this repo)
-npm install @ehradapter/ehr-adapter-sdk
+npm install @securecloudnetworks/ehr-adapter-sdk
 
 # Commercial version (after license purchase)
 npm install @securecloudnetworks/ehr-adapter

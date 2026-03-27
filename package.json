@@ -1,9 +1,9 @@
 {
-  "name": "@ehradapter/ehr-adapter-sdk",
+  "name": "@securecloudnetworks/ehr-adapter-sdk",
   "version": "1.0.0",
   "description": "Open-source TypeScript SDK for EHR integrations with FHIR 4.0.1 compatibility. Mock adapter included for development and testing.",
-  "main": "./lib/cjs/index.js",
-  "module": "./lib/esm/index.mjs",
+  "main": "./lib/index.js",
+  "module": "./lib/index.mjs",
   "types": "./lib/index.d.ts",
   "exports": {
     ".": {
@@ -20,6 +20,7 @@
   ],
   "scripts": {
     "build": "npm run clean && npm run build:esm && npm run build:cjs",
+    "build:dist": "tsup",
     "build:esm": "tsc --module ESNext --outDir lib/esm",
     "build:cjs": "tsc --module CommonJS --outDir lib/cjs",
     "dev": "tsx watch src/index.ts",
@@ -32,7 +33,7 @@
     "format": "prettier --write \"src/**/*.{ts,tsx,json,md}\"",
     "format:check": "prettier --check \"src/**/*.{ts,tsx,json,md}\"",
     "clean": "rimraf lib",
-    "prepublishOnly": "npm run clean && npm run build && npm run test",
+    "prepublishOnly": "npm run clean && npm run build:dist",
     "docs:generate": "typedoc src/index.ts --out docs/api"
   },
   "keywords": [
@@ -82,10 +83,11 @@
     "prettier": "^3.1.0",
     "rimraf": "^5.0.5",
     "ts-jest": "^29.1.1",
+    "tsup": "^8.5.1",
     "tsx": "^4.6.0",
     "typedoc": "^0.25.4",
     "typescript": "^5.3.2"
-  ],
+  },
   "peerDependencies": {
     "typescript": ">=4.5.0"
   },
