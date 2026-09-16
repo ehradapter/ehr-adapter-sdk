@@ -9,12 +9,7 @@ import { MockAdapter } from "../vendors/mock/MockAdapter";
 // Epic and Athena adapters are available in the commercial version
 // import { EpicAdapter } from '../vendors/epic/EpicAdapter';
 // import { AthenaAdapter } from '../vendors/athena/AthenaAdapter';
-import { TenantAwareAdapter } from "./TenantAwareAdapter";
-import {
-  ConfigurationError,
-  EHRAdapterError,
-  TenantIsolationError,
-} from "../types/errors";
+import { ConfigurationError, EHRAdapterError } from "../types/errors";
 import { EHRAdapter } from "./EHRAdapter";
 
 describe("AdapterFactory", () => {
@@ -75,13 +70,41 @@ describe("AdapterFactory", () => {
       );
     });
 
-    it("should wrap in TenantAwareAdapter if tenant config is present", () => {
+    it("should throw when tenant config is present (commercial feature)", () => {
       const tenantConfig = {
         ...mockConfig,
         tenant: { tenantId: "tenant-1", isolationLevel: "strict" as const },
       };
-      const adapter = getAdapter("mock", tenantConfig);
-      expect(adapter).toBeInstanceOf(TenantAwareAdapter);
+      expect(() => getAdapter("mock", tenantConfig)).toThrow(EHRAdapterError);
+      expect(() => getAdapter("mock", tenantConfig)).toThrow(
+        "Multi-tenant support requires a commercial license"
+      );
+    });
+
+    it("should use the COMMERCIAL_LICENSE_REQUIRED code for tenant config", () => {
+      const tenantConfig = {
+        ...mockConfig,
+        tenant: { tenantId: "tenant-1", isolationLevel: "strict" as const },
+      };
+      try {
+        getAdapter("mock", tenantConfig);
+        throw new Error("Expected getAdapter to throw");
+      } catch (error) {
+        expect(error).toBeInstanceOf(EHRAdapterError);
+        expect((error as EHRAdapterError).code).toBe(
+          "COMMERCIAL_LICENSE_REQUIRED"
+        );
+      }
+    });
+
+    it("should never return a non-isolated adapter when tenant is requested", () => {
+      const tenantConfig = {
+        ...mockConfig,
+        tenant: { tenantId: "tenant-1", isolationLevel: "strict" as const },
+      };
+      // Silently falling back to a plain adapter would look like isolation
+      // is in effect when it is not — the call must fail instead.
+      expect(() => getAdapter("mock", tenantConfig)).toThrow();
     });
 
     it("should throw ConfigurationError for invalid config", () => {
@@ -91,13 +114,15 @@ describe("AdapterFactory", () => {
       );
     });
 
-    it("should throw ConfigurationError for invalid tenant config in getAdapter", () => {
+    it("should report the commercial requirement for an invalid tenant config", () => {
       const invalidTenantConfig: any = {
         ...mockConfig,
         tenant: { isolationLevel: "strict" },
       };
+      // Previously surfaced TenantIsolationError from the wrapper's
+      // constructor; the wrapper is no longer reachable from this factory.
       expect(() => getAdapter("mock", invalidTenantConfig)).toThrow(
-        TenantIsolationError
+        "Multi-tenant support requires a commercial license"
       );
     });
 
@@ -137,29 +162,65 @@ describe("AdapterFactory", () => {
   });
 
   describe("getTenantAdapter", () => {
-    it("should create a TenantAwareAdapter", () => {
+    it("should throw for a valid tenant config (commercial feature)", () => {
       const tenantConfig: TenantAdapterConfig = {
         tenantId: "tenant-1",
         config: mockConfig,
       };
-      const adapter = getTenantAdapter("mock", tenantConfig);
-      expect(adapter).toBeInstanceOf(TenantAwareAdapter);
+      expect(() => getTenantAdapter("mock", tenantConfig)).toThrow(
+        EHRAdapterError
+      );
+      expect(() => getTenantAdapter("mock", tenantConfig)).toThrow(
+        "Multi-tenant support requires a commercial license"
+      );
     });
 
-    it("should throw ConfigurationError for invalid tenant config", () => {
+    it("should use the COMMERCIAL_LICENSE_REQUIRED code", () => {
+      const tenantConfig: TenantAdapterConfig = {
+        tenantId: "tenant-1",
+        config: mockConfig,
+      };
+      try {
+        getTenantAdapter("mock", tenantConfig);
+        throw new Error("Expected getTenantAdapter to throw");
+      } catch (error) {
+        expect(error).toBeInstanceOf(EHRAdapterError);
+        expect((error as EHRAdapterError).code).toBe(
+          "COMMERCIAL_LICENSE_REQUIRED"
+        );
+      }
+    });
+
+    it("should gate on the license before validating tenant config", () => {
       const invalidTenantConfig: any = { config: mockConfig };
       expect(() => getTenantAdapter("mock", invalidTenantConfig)).toThrow(
+        "Multi-tenant support requires a commercial license"
+      );
+      expect(() => getTenantAdapter("mock", invalidTenantConfig)).not.toThrow(
         ConfigurationError
       );
     });
 
-    it("should throw ConfigurationError for invalid tenantId format", () => {
+    it("should gate on the license before validating tenantId format", () => {
       const tenantConfig: TenantAdapterConfig = {
         tenantId: "invalid tenant id",
         config: mockConfig,
       };
       expect(() => getTenantAdapter("mock", tenantConfig)).toThrow(
-        ConfigurationError
+        "Multi-tenant support requires a commercial license"
+      );
+    });
+
+    it("should throw regardless of vendor", () => {
+      const tenantConfig: TenantAdapterConfig = {
+        tenantId: "tenant-1",
+        config: mockConfig,
+      };
+      expect(() => getTenantAdapter("epic", tenantConfig)).toThrow(
+        EHRAdapterError
+      );
+      expect(() => getTenantAdapter("not-a-vendor", tenantConfig)).toThrow(
+        EHRAdapterError
       );
     });
   });

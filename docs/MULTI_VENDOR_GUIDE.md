@@ -170,162 +170,108 @@ Mock, Epic, Athena, and Cerner are available on the Developer tier ($99/mo). Hea
 
 ---
 
-## Multi-Tenant Architecture for SaaS Platforms
+## Multi-Tenant Support (Commercial Feature)
 
-If you're building a SaaS healthcare platform that serves multiple customers — each potentially on a different EHR — `TenantAwareAdapter` is your tool. It wraps any adapter with per-tenant isolation, logging, and transformation pipelines.
+**Multi-tenant isolation is not available in the MIT package.** This SDK
+builds single-tenant adapters only. Per-tenant isolation, per-tenant audit
+separation, and per-tenant transformation pipelines ship in the commercial
+package, `@securecloudnetworks/ehr-adapter`.
 
-### Basic Multi-Tenant Setup
+### What happens if you ask for it
+
+Setting `tenant` on an adapter config, or calling `getTenantAdapter()`, fails
+immediately:
 
 ```typescript
-import { MockAdapter, TenantAwareAdapter } from "@ehradapter/ehr-adapter-sdk";
-import type { TenantAdapterConfig } from "@ehradapter/ehr-adapter-sdk";
+import { EHRAdapterFactory } from "@securecloudnetworks/ehr-adapter-sdk";
 
-// Base adapter — one per EHR vendor
-const mockAdapter = new MockAdapter({
+EHRAdapterFactory.create("mock", {
   vendor: "mock",
   baseUrl: "http://localhost:3001",
   auth: { type: "apikey", apiKey: "dev-key" },
+  tenant: { tenantId: "hospital-network-a", isolationLevel: "strict" },
 });
-
-// Tenant A — hospital network
-const tenantAConfig: TenantAdapterConfig = {
-  tenantId: "hospital-network-a",
-  config: {
-    vendor: "mock",
-    baseUrl: "http://localhost:3001",
-    auth: { type: "apikey", apiKey: "dev-key" },
-    options: {
-      headers: {
-        "X-Tenant-ID": "hospital-network-a",
-        "X-Org-Code": "HNA-001",
-      },
-    },
-    tenant: {
-      isolationLevel: "strict",
-      metadata: {
-        orgName: "Hospital Network A",
-        tier: "enterprise",
-        region: "us-east-1",
-      },
-    },
-  },
-};
-
-const tenantAAdapter = new TenantAwareAdapter(mockAdapter, tenantAConfig);
-
-// Tenant B — clinic group (completely isolated)
-const tenantBAdapter = new TenantAwareAdapter(mockAdapter, {
-  tenantId: "clinic-group-b",
-  config: {
-    vendor: "mock",
-    baseUrl: "http://localhost:3001",
-    auth: { type: "apikey", apiKey: "dev-key" },
-    tenant: {
-      isolationLevel: "strict",
-      metadata: { orgName: "Clinic Group B", tier: "professional" },
-    },
-  },
-});
-
-// Data for Tenant A is invisible to Tenant B — enforced at the adapter level
-const patientA = await tenantAAdapter.getPatient("patient-001");
-const auditA   = await tenantAAdapter.getAuditLog();  // only Tenant A's logs
-const auditB   = await tenantBAdapter.getAuditLog();  // only Tenant B's logs
+// throws EHRAdapterError
+//   code:    "COMMERCIAL_LICENSE_REQUIRED"
+//   message: "Multi-tenant support requires a commercial license
+//             — see https://ehradapter.com/pricing"
 ```
 
-### Dynamic Tenant Routing
-
-For platforms with many tenants, route to the right adapter at request time:
+The error carries the standard `EHRAdapterError` shape, so you can branch on
+`error.code` the same way you handle any other SDK failure:
 
 ```typescript
-import type { EHRAdapter } from "@ehradapter/ehr-adapter-sdk";
+import { EHRAdapterFactory } from "@securecloudnetworks/ehr-adapter-sdk";
+import { EHRAdapterError } from "@securecloudnetworks/ehr-adapter-sdk";
 
-// Tenant registry — in production, load from your database
-const tenantRegistry: Record<string, { vendor: string; config: any }> = {
-  "org-001": { vendor: "mock",  config: { /* mock config */   } },
-  "org-002": { vendor: "epic",  config: { /* epic config */   } },  // commercial
-  "org-003": { vendor: "athena",config: { /* athena config */ } },  // commercial
-};
-
-class MultiTenantAdapterRouter {
-  private adapters = new Map<string, EHRAdapter>();
-
-  async getAdapter(tenantId: string): Promise<EHRAdapter> {
-    if (!this.adapters.has(tenantId)) {
-      const tenantDef = tenantRegistry[tenantId];
-      if (!tenantDef) throw new Error(`Unknown tenant: ${tenantId}`);
-
-      const adapter = await this.createAdapter(tenantDef.vendor, tenantDef.config);
-      this.adapters.set(tenantId, adapter);
-    }
-
-    return this.adapters.get(tenantId)!;
+try {
+  const adapter = EHRAdapterFactory.create(vendor, config);
+  await adapter.connect();
+} catch (error) {
+  if (
+    error instanceof EHRAdapterError &&
+    error.code === "COMMERCIAL_LICENSE_REQUIRED"
+  ) {
+    // Surface an upgrade path rather than a stack trace
+    return showUpgradePrompt("https://ehradapter.com/pricing");
   }
+  throw error;
+}
+```
 
-  private async createAdapter(vendor: string, config: any): Promise<EHRAdapter> {
-    switch (vendor) {
-      case "mock": {
-        const { MockAdapter, TenantAwareAdapter } = await import("@ehradapter/ehr-adapter-sdk");
-        const base = new MockAdapter(config);
-        return new TenantAwareAdapter(base, config.tenantConfig);
-      }
-      // case "epic": {
-      //   const { EpicAdapter, TenantAwareAdapter } = await import("@securecloudnetworks/ehr-adapter");
-      //   const base = new EpicAdapter(config);
-      //   return new TenantAwareAdapter(base, config.tenantConfig);
-      // }
-      default:
-        throw new Error(`Unknown vendor: ${vendor}`);
-    }
+### Why it throws instead of falling back
+
+The SDK could ignore `tenant` and hand back a plain adapter. It deliberately
+does not. A non-isolated adapter returned from a call that requested isolation
+looks like isolation is in effect when it is not — and in a healthcare context
+that is how one customer ends up reading another customer's PHI. A loud
+failure at construction time is recoverable; a silent one is a breach.
+
+### Building a multi-customer platform on the MIT package
+
+You can still serve multiple customers with this package, but the separation
+is **yours to enforce** — the SDK provides no tenant guarantees. In practice
+that means one adapter instance per customer, with separate credentials and
+separate storage, and your own authorization check on every request:
+
+```typescript
+import { EHRAdapterFactory } from "@securecloudnetworks/ehr-adapter-sdk";
+import type { EHRAdapter } from "@securecloudnetworks/ehr-adapter-sdk";
+
+// One adapter per customer. No `tenant` key — that would throw.
+const adapters = new Map<string, EHRAdapter>();
+
+function adapterForCustomer(customerId: string): EHRAdapter {
+  let adapter = adapters.get(customerId);
+  if (!adapter) {
+    adapter = EHRAdapterFactory.create("mock", loadConfigFor(customerId));
+    adapters.set(customerId, adapter);
   }
+  return adapter;
 }
 
-// Usage
-const router = new MultiTenantAdapterRouter();
-
-// Route org-001's request to their configured EHR
-const adapter = await router.getAdapter("org-001");
-const patient = await adapter.getPatient(patientId);
+// Your application layer is the only thing keeping customers apart:
+// the SDK will not stop customer A's session from using customer B's adapter.
+async function getPatientFor(customerId: string, patientId: string) {
+  assertCallerBelongsTo(customerId);            // you must write this
+  assertPatientBelongsTo(customerId, patientId); // and this
+  return adapterForCustomer(customerId).getPatient(patientId);
+}
 ```
 
-### Tenant-Specific Data Transformations
+What you do **not** get here, and what the commercial package adds:
 
-`TenantAwareAdapter` supports per-tenant transformation pipelines — useful when different customers need data in different formats or have custom field requirements:
+| Capability | MIT (this package) | Commercial |
+|---|:---:|:---:|
+| Adapter-level tenant isolation enforcement | ❌ | ✅ |
+| Per-tenant audit log separation | ❌ | ✅ |
+| Per-tenant transformation pipelines | ❌ | ✅ |
+| Per-tenant config, headers, and metadata | ❌ | ✅ |
+| Cross-tenant access errors (`TenantIsolationError`) | ❌ | ✅ |
 
-```typescript
-import { TenantAwareAdapter } from "@ehradapter/ehr-adapter-sdk";
-import type { TransformationPipeline, DataProcessor } from "@ehradapter/ehr-adapter-sdk";
-
-// Custom processor: add organization branding to patient records
-const addOrgMetadata: DataProcessor = {
-  name: "add-org-metadata",
-  enabled: true,
-  process: async (data: any, context) => {
-    if (Array.isArray(data)) {
-      return data.map(item => ({
-        ...item,
-        _orgContext: { tenantId: context.tenantId, processedAt: new Date().toISOString() },
-      }));
-    }
-    return {
-      ...data,
-      _orgContext: { tenantId: context.tenantId, processedAt: new Date().toISOString() },
-    };
-  },
-};
-
-const pipeline: TransformationPipeline = {
-  preProcessors: [],
-  postProcessors: [addOrgMetadata],
-  options: { failFast: false },
-};
-
-const tenantAdapter = new TenantAwareAdapter(baseAdapter, {
-  tenantId: "org-with-custom-transform",
-  config: { /* ... */ },
-  transformationPipeline: pipeline,
-});
-```
+If you are storing PHI for more than one customer, enforce separation in the
+SDK rather than in application code you have to remember to write correctly
+every time — **[see pricing](https://ehradapter.com/pricing)**.
 
 ---
 
@@ -334,7 +280,7 @@ const tenantAdapter = new TenantAwareAdapter(baseAdapter, {
 A common scenario: your platform serves clinics that use different EHR systems, and you want to aggregate data across all of them.
 
 ```typescript
-import { MockAdapter, TenantAwareAdapter } from "@ehradapter/ehr-adapter-sdk";
+import { MockAdapter } from "@ehradapter/ehr-adapter-sdk";
 // import { EpicAdapter, AthenaAdapter } from "@securecloudnetworks/ehr-adapter";
 
 interface PatientRecord {

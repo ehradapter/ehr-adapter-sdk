@@ -1,9 +1,11 @@
 # EHR Adapter SDK
 
+[![npm version](https://img.shields.io/npm/v/@securecloudnetworks/ehr-adapter-sdk)](https://www.npmjs.com/package/@securecloudnetworks/ehr-adapter-sdk)
+[![npm downloads](https://img.shields.io/npm/dm/@securecloudnetworks/ehr-adapter-sdk)](https://www.npmjs.com/package/@securecloudnetworks/ehr-adapter-sdk)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/ehradapter/ehr-adapter-sdk/blob/main/LICENSE.md)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.3+-3178C6.svg)](https://www.typescriptlang.org/)
 [![FHIR R4](https://img.shields.io/badge/FHIR-R4-brightgreen.svg)](https://hl7.org/fhir/R4/)
-[![Tests](https://img.shields.io/badge/tests-986%2F986%20passing-brightgreen.svg)](https://github.com/ehradapter/ehr-adapter-sdk/actions)
+[![Tests](https://img.shields.io/badge/tests-CI--verified-brightgreen.svg)](https://github.com/ehradapter/ehr-adapter-sdk/actions)
 [![Node](https://img.shields.io/badge/node-%3E%3D16-brightgreen.svg)](https://nodejs.org)
 
 > **Ship EHR integrations in days, not months.**  
@@ -45,7 +47,9 @@ That's it. No EHR credentials, no sandbox accounts, no NDAs — just working FHI
 - `EHRAdapter` interface — the unified contract all adapters implement
 - `BaseAdapter` — HTTP client, automatic retries, circuit breaker, audit logging
 - `AdapterFactory` — create adapters by vendor name
-- `TenantAwareAdapter` — multi-tenant isolation wrapper for SaaS platforms
+
+Single-tenant only. Multi-tenant isolation is a commercial feature — see
+[Multi-Tenant Support](#multi-tenant-support) below.
 
 **Authentication**
 - `ApiKeyProvider` — API key auth (header, query param, or cookie)
@@ -57,7 +61,6 @@ That's it. No EHR credentials, no sandbox accounts, no NDAs — just working FHI
 - Builder-pattern config types for adapters and tenants
 
 **Plugin System**
-- `PluginManager` — register/unregister plugins, lifecycle hooks
 - `TransformationPipeline` — pre/post processors and validation pipeline
 
 **MockAdapter**
@@ -73,7 +76,7 @@ That's it. No EHR credentials, no sandbox accounts, no NDAs — just working FHI
 - HIPAA/GDPR compliance event logging with breach detection
 - Environment config loader
 
-**Tests:** 986/986 passing.
+**Tests:** automated suite, CI-verified on every push.
 
 ---
 
@@ -189,7 +192,36 @@ Your Application
 
 Every adapter returns the same FHIR R4 types. Every error is the same `EHRAdapterError` hierarchy. Your integration code stays the same — you swap the adapter config when you're ready for production.
 
-**Multi-tenant SaaS:** Wrap any adapter in `TenantAwareAdapter` for per-tenant isolation, config, and audit logging.
+### Multi-Tenant Support
+
+**Multi-tenant isolation is a commercial feature and is not available in this
+MIT package.** This SDK builds single-tenant adapters only.
+
+If you set `tenant` on an adapter config, or call `getTenantAdapter()`, the
+call fails immediately:
+
+```typescript
+import { EHRAdapterFactory } from "@securecloudnetworks/ehr-adapter-sdk";
+
+EHRAdapterFactory.create("mock", {
+  vendor: "mock",
+  baseUrl: "http://localhost:3001",
+  auth: { type: "apikey", apiKey: "dev-key" },
+  tenant: { tenantId: "hospital-a", isolationLevel: "strict" },
+});
+// throws EHRAdapterError
+//   code:    "COMMERCIAL_LICENSE_REQUIRED"
+//   message: "Multi-tenant support requires a commercial license
+//             — see https://ehradapter.com/pricing"
+```
+
+This is deliberate. Returning a plain, non-isolated adapter would look like
+tenant isolation was in effect when it was not — in a healthcare context that
+is a PHI leak waiting to happen. The SDK fails loudly instead.
+
+For per-tenant isolation, config, and audit logging across many customers,
+use the commercial package `@securecloudnetworks/ehr-adapter` —
+**[see pricing](https://ehradapter.com/pricing)**.
 
 ---
 
@@ -264,7 +296,7 @@ Integration guides: [`/docs`](./docs/)
 
 ## Commercial License
 
-The MIT version is the complete SDK minus vendor adapters. When you're ready to connect to real EHRs, purchase a commercial license and switch packages:
+The MIT version is the complete SDK minus vendor adapters and multi-tenant isolation. When you’re ready to connect to real EHRs, or to serve multiple tenants, purchase a commercial license and switch packages:
 
 ```bash
 # Free MIT version (this repo)
@@ -274,7 +306,7 @@ npm install @securecloudnetworks/ehr-adapter-sdk
 npm install @securecloudnetworks/ehr-adapter
 ```
 
-The commercial SDK (`@securecloudnetworks/ehr-adapter`) is a drop-in replacement — same API, same types, same method signatures. You get Epic, Athena, Cerner, Health Gorilla, OAuth2/SMART on FHIR, premium plugins, and priority support.
+The commercial SDK (`@securecloudnetworks/ehr-adapter`) is a drop-in replacement — same API, same types, same method signatures. You get Epic, Athena, Cerner, Health Gorilla, OAuth2/SMART on FHIR, multi-tenant isolation, premium plugins, and priority support.
 
 **[Purchase a license →](https://ehradapter.com/pricing)**
 

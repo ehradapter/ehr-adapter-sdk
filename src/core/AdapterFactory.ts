@@ -2,11 +2,13 @@
  * EHR Adapter Factory
  *
  * Factory pattern implementation for creating EHR adapter instances.
- * Supports multi-tenant configurations and plugin management.
+ *
+ * Multi-tenant isolation is NOT part of the open-source SDK. Requesting it
+ * here fails with a COMMERCIAL_LICENSE_REQUIRED error rather than returning
+ * an adapter that appears isolated but is not.
  */
 
 import { EHRAdapter } from "./EHRAdapter";
-import { TenantAwareAdapter } from "./TenantAwareAdapter";
 import { AdapterConfig, TenantAdapterConfig } from "../types/config";
 import { EHRAdapterError, ConfigurationError } from "../types/errors";
 
@@ -19,6 +21,21 @@ import { MockAdapter } from "../vendors/mock/MockAdapter";
 import { BaseAdapter } from "./BaseAdapter";
 
 export type AdapterConstructor = new (config: AdapterConfig) => EHRAdapter;
+
+/**
+ * Build the error raised when multi-tenant features are requested from the
+ * open-source SDK. Tenant isolation ships in the commercial package only.
+ * @param vendor - The EHR vendor name the caller asked for
+ * @returns EHRAdapterError describing the commercial requirement
+ */
+function multiTenantNotLicensedError(vendor: string): EHRAdapterError {
+  return new EHRAdapterError(
+    "Multi-tenant support requires a commercial license — see https://ehradapter.com/pricing",
+    "COMMERCIAL_LICENSE_REQUIRED",
+    vendor
+  );
+}
+
 /**
  * Main factory function for creating EHR adapters
  * @param vendorName - The EHR vendor name
@@ -37,43 +54,33 @@ export function getAdapter(
   // Create base adapter
   const adapter = createVendorAdapter(normalizedVendor, config);
 
-  // Return adapter (will be wrapped in TenantAwareAdapter if tenant config exists)
+  // Multi-tenant isolation is a commercial feature. Fail loudly instead of
+  // ignoring config.tenant and handing back a non-isolated adapter, which
+  // would look like isolation is in effect when it is not.
   if (config.tenant) {
-    const tenantConfig: TenantAdapterConfig = {
-      tenantId: config.tenant.tenantId,
-      config,
-      plugins: config.plugins || [],
-      ...(config.logger && { logger: config.logger }),
-      // SecurityProvider is available in the commercial version
-      // ...(config.security && { security: config.security }),
-    };
-    return new TenantAwareAdapter(adapter, tenantConfig);
+    throw multiTenantNotLicensedError(normalizedVendor);
   }
 
   return adapter;
 }
 
 /**
- * Multi-tenant adapter factory function
+ * Multi-tenant adapter factory function.
+ *
+ * Multi-tenant isolation is a commercial feature, so this function always
+ * throws in the open-source SDK. The license check runs before any
+ * validation, so an invalid tenant config reports the commercial
+ * requirement rather than a validation error.
+ *
  * @param vendorName - The EHR vendor name
- * @param tenantConfig - Tenant-specific configuration
- * @returns EHRAdapter instance with tenant isolation
+ * @param _tenantConfig - Tenant-specific configuration (never read)
+ * @throws EHRAdapterError with code COMMERCIAL_LICENSE_REQUIRED, always
  */
 export function getTenantAdapter(
   vendorName: string,
-  tenantConfig: TenantAdapterConfig
+  _tenantConfig: TenantAdapterConfig
 ): EHRAdapter {
-  const normalizedVendor = vendorName.toLowerCase().trim();
-
-  // Validate configuration
-  validateAdapterConfig(tenantConfig.config);
-  validateTenantConfig(tenantConfig);
-
-  // Create base adapter
-  const adapter = createVendorAdapter(normalizedVendor, tenantConfig.config);
-
-  // Wrap in tenant-aware adapter
-  return new TenantAwareAdapter(adapter, tenantConfig);
+  throw multiTenantNotLicensedError(vendorName);
 }
 
 /**
@@ -163,42 +170,6 @@ function validateAdapterConfig(config: AdapterConfig): void {
       "config",
       config,
       "adapter_validation"
-    );
-  }
-}
-
-/**
- * Validate tenant configuration
- * @param tenantConfig - Tenant configuration to validate
- */
-function validateTenantConfig(tenantConfig: TenantAdapterConfig): void {
-  const errors: string[] = [];
-
-  if (!tenantConfig.tenantId) {
-    errors.push("Tenant ID is required");
-  }
-
-  if (!tenantConfig.config) {
-    errors.push("Adapter configuration is required");
-  }
-
-  // Validate tenant ID format (alphanumeric, hyphens, underscores)
-  if (
-    tenantConfig.tenantId &&
-    !/^[a-zA-Z0-9_-]+$/.test(tenantConfig.tenantId)
-  ) {
-    errors.push(
-      "Tenant ID must contain only alphanumeric characters, hyphens, and underscores"
-    );
-  }
-
-  if (errors.length > 0) {
-    throw new ConfigurationError(
-      `Invalid tenant configuration: ${errors.join(", ")}`,
-      tenantConfig.config?.vendor || "unknown",
-      "tenantConfig",
-      tenantConfig as any,
-      "tenant_validation"
     );
   }
 }

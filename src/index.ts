@@ -10,7 +10,8 @@
 export type { EHRAdapter } from "./core/EHRAdapter";
 export { BaseAdapter } from "./core/BaseAdapter";
 export { EHRAdapterFactory } from "./core/AdapterFactory";
-export { TenantAwareAdapter } from "./core/TenantAwareAdapter";
+// TenantAwareAdapter is intentionally not exported. Multi-tenant isolation is a
+// commercial feature; see https://ehradapter.com/pricing
 
 // Type exports
 export * from "./types/fhir";
@@ -25,7 +26,7 @@ export { BearerTokenProvider } from "./auth/BearerTokenProvider";
 export { AuthenticationError } from "./auth/AuthenticationError";
 
 // Plugin system exports
-export { PluginManager } from "./plugins/PluginManager";
+// PluginManager is internal-only; it is not part of the supported public API.
 export { TransformationPipeline } from "./plugins/TransformationPipeline";
 
 // Mock vendor adapter (for development and testing)

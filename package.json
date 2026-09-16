@@ -1,6 +1,6 @@
 {
   "name": "@securecloudnetworks/ehr-adapter-sdk",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Open-source TypeScript SDK for EHR integrations with FHIR 4.0.1 compatibility. Mock adapter included for development and testing.",
   "main": "./lib/index.js",
   "module": "./lib/index.mjs",
